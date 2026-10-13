@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d1321" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>靠墙静蹲倒计时</title>
+    <style>
+      :root {
+        --bg-1: #0d1321;
+        --bg-2: #18233d;
+        --panel: rgba(13, 19, 33, 0.78);
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --text: #f4f7fb;
+        --muted: #a8b3c7;
+        --accent: #6ae4b6;
+        --accent-2: #74b9ff;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(106, 228, 182, 0.22), transparent 35%),
+          radial-gradient(circle at top right, rgba(116, 185, 255, 0.18), transparent 30%),
+          linear-gradient(160deg, var(--bg-1), var(--bg-2));
+        padding: 16px;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .app-shell {
+        max-width: 1080px;
+        margin: 0 auto;
+        display: grid;
+        gap: 16px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1.3fr 0.9fr;
+        gap: 24px;
+        align-items: center;
+        padding: 24px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.2rem, 4vw, 4.5rem);
+        line-height: 1.02;
+      }
+
+      .subcopy {
+        margin: 14px 0 0;
+        max-width: 42rem;
+        color: var(--muted);
+        font-size: 1.02rem;
+        line-height: 1.6;
+      }
+
+      .timer-ring {
+        width: min(100%, 320px);
+        aspect-ratio: 1;
+        margin: 0 auto;
+        padding: 16px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, var(--accent), var(--accent-2), var(--accent));
+        box-shadow: 0 0 60px rgba(106, 228, 182, 0.18);
+      }
+
+      .timer-ring__inner {
+        height: 100%;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        background: rgba(8, 12, 22, 0.94);
+      }
+
+      .timer-value {
+        font-size: clamp(2.7rem, 8vw, 4.8rem);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+
+      .timer-label {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.96rem;
+      }
+
+      .controls,
+      .history {
+        padding: 24px;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        font-size: 1.35rem;
+      }
+
+      .section-head p {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .preset-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .preset-btn,
+      .primary-btn,
+      .secondary-btn,
+      .ghost-btn {
+        border: 0;
+        border-radius: 16px;
+        padding: 14px 16px;
+        cursor: pointer;
+        transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+      }
+
+      .preset-btn:hover,
+      .primary-btn:hover,
+      .secondary-btn:hover,
+      .ghost-btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .preset-btn {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .preset-btn.active {
+        background: linear-gradient(135deg, rgba(106, 228, 182, 0.28), rgba(116, 185, 255, 0.24));
+        border-color: rgba(106, 228, 182, 0.55);
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .action-btn {
+        display: grid;
+        place-items: center;
+        gap: 8px;
+        min-height: 86px;
+        padding: 14px 12px;
+        line-height: 1.1;
+      }
+
+      .action-icon {
+        width: 26px;
+        height: 26px;
+        display: block;
+      }
+
+      .action-label {
+        font-size: 0.92rem;
+        font-weight: 800;
+      }
+
+      .primary-btn {
+        background: linear-gradient(135deg, var(--accent), #b6ffd9);
+        color: #09111a;
+      }
+
+      .primary-btn .action-icon,
+      .primary-btn .action-label {
+        color: #09111a;
+      }
+
+      .secondary-btn {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+      }
+
+      .ghost-btn {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .voice-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 18px;
+        color: var(--muted);
+        user-select: none;
+      }
+
+      .status-box {
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        line-height: 1.6;
+      }
+
+      .history-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .history-tools input {
+        min-width: 180px;
+        padding: 13px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+      }
+
+      .history-summary {
+        margin-top: 18px;
+        color: var(--muted);
+      }
+
+      .history-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .history-item {
+        display: grid;
+        gap: 8px;
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .history-item__top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .history-item__title {
+        font-weight: 700;
+      }
+
+      .history-item__meta {
+        color: var(--muted);
+        font-size: 0.94rem;
+      }
+
+      .history-item__time {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      @media (max-width: 760px) {
+        body {
+          padding: 12px;
+        }
+
+        .hero {
+          grid-template-columns: 1fr;
+        }
+
+        .preset-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero card">
+        <div>
+          <p class="eyebrow">运动训练助手</p>
+          <h1>靠墙静蹲倒数</h1>
+          <p class="subcopy">选择训练时长，开始后每 5 秒汇报一次剩余时间，并自动保存训练记录。</p>
+        </div>
+        <div class="timer-ring" aria-live="polite">
+          <div class="timer-ring__inner">
+            <div class="timer-value" id="timeDisplay">00:00</div>
+            <div class="timer-label" id="timerLabel">未开始</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card controls">
+        <div class="section-head">
+          <h2>选择训练或休息时间</h2>
+          <p>选择训练时长，或休息 1 分 30 秒。每一秒会有“滴”声，休息不计入训练记录。</p>
+        </div>
+
+        <div class="preset-grid">
+          <button class="preset-btn active" data-seconds="20">20 秒</button>
+          <button class="preset-btn" data-seconds="30">30 秒</button>
+          <button class="preset-btn" data-seconds="40">40 秒</button>
+          <button class="preset-btn" data-seconds="50">50 秒</button>
+          <button class="preset-btn" data-seconds="60">1 分钟</button>
+          <button class="preset-btn" data-seconds="120">2 分钟</button>
+          <button class="preset-btn" data-seconds="90" data-mode="rest">休息 1 分 30 秒</button>
+        </div>
+
+        <div class="actions">
+          <button class="primary-btn action-btn" id="startBtn" aria-label="开始训练">
+            <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+            <span class="action-label">开始</span>
+          </button>
+          <button class="secondary-btn action-btn" id="pauseBtn" disabled aria-label="暂停或继续训练">
+            <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M6 5h4v14H6zm8 0h4v14h-4z"></path>
+            </svg>
+            <span class="action-label">暂停</span>
+          </button>
+          <button class="ghost-btn action-btn" id="resetBtn" disabled aria-label="重置训练">
+            <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 6V3L8 7l4 4V8c3.31 0 6 2.69 6 6a6 6 0 0 1-10.58 3.84l-1.42 1.42A8 8 0 1 0 12 6z"></path>
+            </svg>
+            <span class="action-label">重置</span>
+          </button>
+        </div>
+
+        <label class="voice-toggle">
+          <input type="checkbox" id="voiceToggle" checked />
+          <span>启用语音播报</span>
+        </label>
+
+        <div class="status-box" id="statusBox">请选择一个训练时长，然后点击“开始训练”。</div>
+      </section>
+
+      <section class="card history">
+        <div class="section-head">
+          <h2>训练记录</h2>
+          <p>记录会保存在本机浏览器中，方便后续查询。</p>
+        </div>
+
+        <div class="history-tools">
+          <input type="date" id="dateFilter" />
+          <button class="secondary-btn" id="clearFilterBtn">清除筛选</button>
+          <button class="ghost-btn" id="clearRecordsBtn">清空记录</button>
+        </div>
+
+        <div class="history-summary" id="historySummary"></div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+    </main>
+
+    <script>
+      const STORAGE_KEY = "wall-sit-tracker-records";
+
+      const presetButtons = Array.from(document.querySelectorAll(".preset-btn"));
+      const timeDisplay = document.getElementById("timeDisplay");
+      const timerLabel = document.getElementById("timerLabel");
+      const statusBox = document.getElementById("statusBox");
+      const startBtn = document.getElementById("startBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const voiceToggle = document.getElementById("voiceToggle");
+      const historyList = document.getElementById("historyList");
+      const historySummary = document.getElementById("historySummary");
+      const dateFilter = document.getElementById("dateFilter");
+      const clearFilterBtn = document.getElementById("clearFilterBtn");
+      const clearRecordsBtn = document.getElementById("clearRecordsBtn");
+      const pauseLabel = pauseBtn.querySelector(".action-label");
+
+      let selectedSeconds = 20;
+      let sessionMode = "training";
+      const sessionName = () => sessionMode === "rest" ? "休息" : "训练";
+      let totalSeconds = 20;
+      let startTimestamp = null;
+      let elapsedBeforePause = 0;
+      let intervalId = null;
+      let running = false;
+      let paused = false;
+      let lastAnnouncedBucket = null;
+      let lastTickSecond = null;
+      let cachedZhVoice = null;
+      let audioContext = null;
+      const preferredVoiceLangs = ["zh-sg", "zh-cn", "zh-my", "zh-hans", "zh"];
+
+      const setPresetButtonsDisabled = (disabled) => {
+        presetButtons.forEach((button) => {
+          button.disabled = disabled;
+        });
+      };
+
+      const loadRecords = () => {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      };
+
+      const saveRecords = (records) => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      };
+
+      const formatTime = (seconds) => {
+        const safeSeconds = Math.max(0, Math.floor(seconds));
+        const minutes = String(Math.floor(safeSeconds / 60)).padStart(2, "0");
+        const secs = String(safeSeconds % 60).padStart(2, "0");
+        return `${minutes}:${secs}`;
+      };
+
+      const formatDuration = (seconds) => {
+        if (seconds >= 60) {
+          const minutes = Math.floor(seconds / 60);
+          const remain = seconds % 60;
+          return remain === 0 ? `${minutes} 分钟` : `${minutes} 分 ${remain} 秒`;
+        }
+        return `${seconds} 秒`;
+      };
+
+      const formatDateTime = (isoString) => {
+        const date = new Date(isoString);
+        return new Intl.DateTimeFormat("zh-CN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(date);
+      };
+
+      const speak = (text) => {
+        if (!voiceToggle.checked || !window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "zh-SG";
+        const voices = window.speechSynthesis.getVoices();
+        cachedZhVoice =
+          cachedZhVoice ||
+          voices.find((voice) => {
+            const lang = (voice.lang || "").toLowerCase();
+            return preferredVoiceLangs.some((preferred) => lang.startsWith(preferred));
+          });
+        if (cachedZhVoice) {
+          utterance.voice = cachedZhVoice;
+          utterance.lang = cachedZhVoice.lang || utterance.lang;
+        }
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        window.speechSynthesis.speak(utterance);
+      };
+
+      const preloadChineseVoice = () => {
+        if (!window.speechSynthesis) return;
+        const voices = window.speechSynthesis.getVoices();
+        cachedZhVoice =
+          voices.find((voice) => {
+            const lang = (voice.lang || "").toLowerCase();
+            return preferredVoiceLangs.some((preferred) => lang.startsWith(preferred));
+          }) || cachedZhVoice;
+      };
+
+      const playVictoryBell = () => {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+
+        const context = audioContext || new AudioContextClass();
+        audioContext = context;
+        const master = context.createGain();
+        master.gain.value = 0.0001;
+        master.connect(context.destination);
+
+        const notes = [
+          { frequency: 784, start: 0, duration: 0.18 },
+          { frequency: 988, start: 0.16, duration: 0.18 },
+          { frequency: 1175, start: 0.32, duration: 0.28 },
+        ];
+
+        notes.forEach(({ frequency, start, duration }) => {
+          const oscillator = context.createOscillator();
+          const gain = context.createGain();
+          oscillator.type = "sine";
+          oscillator.frequency.value = frequency;
+          gain.gain.setValueAtTime(0.0001, context.currentTime + start);
+          gain.gain.exponentialRampToValueAtTime(0.26, context.currentTime + start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + start + duration);
+          oscillator.connect(gain);
+          gain.connect(master);
+          oscillator.start(context.currentTime + start);
+          oscillator.stop(context.currentTime + start + duration + 0.05);
+        });
+
+        master.gain.exponentialRampToValueAtTime(0.8, context.currentTime + 0.02);
+        master.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.8);
+
+        window.setTimeout(() => {
+          context.close().catch(() => {});
+          if (audioContext === context) {
+            audioContext = null;
+          }
+        }, 1200);
+      };
+
+      const playTickBeep = () => {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+
+        const context = audioContext || new AudioContextClass();
+        audioContext = context;
+        if (context.state === "suspended") {
+          context.resume().catch(() => {});
+        }
+
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "triangle";
+        oscillator.frequency.value = 1180;
+        gain.gain.setValueAtTime(0.0001, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.1, context.currentTime + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.05);
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.07);
+      };
+
+      const announceRemaining = (remainingSeconds) => {
+        const bucket = Math.floor(remainingSeconds / 5) * 5;
+        if (bucket === lastAnnouncedBucket && remainingSeconds !== 0) return;
+        lastAnnouncedBucket = bucket;
+        const spoken = remainingSeconds === 0 ? "时间到" : `还剩 ${formatDuration(remainingSeconds)}`;
+        speak(spoken);
+        statusBox.textContent = spoken;
+      };
+
+      const updateTimerUI = (remainingSeconds) => {
+        timeDisplay.textContent = formatTime(remainingSeconds);
+        if (!running && !paused) {
+          timerLabel.textContent = "未开始";
+        } else if (paused) {
+          timerLabel.textContent = "已暂停";
+        } else if (remainingSeconds <= 0) {
+          timerLabel.textContent = "已完成";
+        } else {
+          timerLabel.textContent = `${sessionName()}中`;
+        }
+      };
+
+      const getElapsedSeconds = () => {
+        if (!running && !paused) return 0;
+        if (paused) return elapsedBeforePause;
+        return elapsedBeforePause + (Date.now() - startTimestamp) / 1000;
+      };
+
+      const renderHistory = () => {
+        const filterDate = dateFilter.value;
+        const records = loadRecords().filter((record) => {
+          if (!filterDate) return true;
+          return record.completedAt.startsWith(filterDate);
+        });
+
+        const totalEntries = records.length;
+        const totalSecondsDone = records.reduce((sum, record) => sum + (record.actualSeconds || 0), 0);
+
+        historySummary.textContent = totalEntries
+          ? `共 ${totalEntries} 条记录，累计训练 ${formatDuration(totalSecondsDone)}。`
+          : "暂无训练记录。";
+
+        historyList.innerHTML = records.length
+          ? records
+              .map(
+                (record) => `
+                  <article class="history-item">
+                    <div class="history-item__top">
+                      <div class="history-item__title">目标 ${formatDuration(record.plannedSeconds)} · 实际 ${formatDuration(record.actualSeconds)}</div>
+                      <div class="history-item__time">${record.status}</div>
+                    </div>
+                    <div class="history-item__meta">完成时间：${formatDateTime(record.completedAt)}</div>
+                  </article>
+                `,
+              )
+              .join("")
+          : `<div class="history-item"><div class="history-item__meta">还没有记录，先开始一组训练吧。</div></div>`;
+      };
+
+      const finishSession = () => {
+        if (!running && !paused) return;
+        clearInterval(intervalId);
+        intervalId = null;
+        lastTickSecond = null;
+
+        const elapsed = Math.min(totalSeconds, Math.round(getElapsedSeconds()));
+        const record = {
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+          plannedSeconds: totalSeconds,
+          actualSeconds: elapsed,
+          completedAt: new Date().toISOString(),
+          status: elapsed >= totalSeconds ? "完成" : "提前结束",
+        };
+
+        if (sessionMode === "training") {
+          const records = loadRecords();
+          records.unshift(record);
+          saveRecords(records);
+          renderHistory();
+        }
+
+        running = false;
+        paused = false;
+        elapsedBeforePause = 0;
+        startTimestamp = null;
+        lastTickSecond = null;
+        setPresetButtonsDisabled(false);
+        pauseLabel.textContent = "暂停";
+        pauseBtn.disabled = true;
+        resetBtn.disabled = true;
+        startBtn.disabled = false;
+        timerLabel.textContent = "已完成";
+        timeDisplay.textContent = "00:00";
+        const completionMessage = sessionMode === "rest"
+          ? "休息结束，可以开始下一组训练了。"
+          : `训练结束，已记录本次 ${formatDuration(elapsed)} 的训练。`;
+        statusBox.textContent = completionMessage;
+        speak(completionMessage);
+        playVictoryBell();
+      };
+
+      const tick = () => {
+        const elapsed = getElapsedSeconds();
+        const remaining = Math.max(0, totalSeconds - Math.floor(elapsed));
+        updateTimerUI(remaining);
+
+        if (remaining <= 0) {
+          lastTickSecond = null;
+          announceRemaining(0);
+          finishSession();
+          return;
+        }
+
+        if (remaining !== lastTickSecond) {
+          lastTickSecond = remaining;
+          playTickBeep();
+          if (remaining > 0) {
+            statusBox.textContent = `还剩 ${formatDuration(remaining)}。`;
+          }
+        }
+
+        if (remaining % 5 === 0) {
+          announceRemaining(remaining);
+        }
+      };
+
+      const startTimer = () => {
+        if (running) return;
+        running = true;
+        paused = false;
+        totalSeconds = selectedSeconds;
+        lastAnnouncedBucket = null;
+        lastTickSecond = null;
+        startTimestamp = Date.now();
+        intervalId = window.setInterval(tick, 250);
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+        resetBtn.disabled = false;
+        setPresetButtonsDisabled(true);
+        pauseLabel.textContent = "暂停";
+        updateTimerUI(totalSeconds);
+        statusBox.textContent = `已开始 ${formatDuration(totalSeconds)} 的${sessionName()}。每 5 秒会播报一次剩余时间。`;
+        speak(`开始${sessionName()}，目标时长 ${formatDuration(totalSeconds)}`);
+      };
+
+      const pauseTimer = () => {
+        if (!running && !paused) return;
+        if (!paused) {
+          elapsedBeforePause = getElapsedSeconds();
+          clearInterval(intervalId);
+          intervalId = null;
+          paused = true;
+          startBtn.disabled = true;
+          setPresetButtonsDisabled(true);
+          pauseLabel.textContent = "继续";
+          statusBox.textContent = `${sessionName()}已暂停。点击“继续”可以恢复计时。`;
+          speak(`${sessionName()}已暂停`);
+        } else {
+          paused = false;
+          running = true;
+          startTimestamp = Date.now();
+          intervalId = window.setInterval(tick, 250);
+          startBtn.disabled = true;
+          setPresetButtonsDisabled(true);
+          pauseLabel.textContent = "暂停";
+          statusBox.textContent = `${sessionName()}已继续。`;
+          speak(`${sessionName()}已继续`);
+        }
+      };
+
+      const resetTimer = () => {
+        clearInterval(intervalId);
+        intervalId = null;
+        running = false;
+        paused = false;
+        elapsedBeforePause = 0;
+        startTimestamp = null;
+        lastAnnouncedBucket = null;
+        lastTickSecond = null;
+        setPresetButtonsDisabled(false);
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        resetBtn.disabled = true;
+        pauseLabel.textContent = "暂停";
+        timerLabel.textContent = "未开始";
+        timeDisplay.textContent = formatTime(selectedSeconds);
+        statusBox.textContent = "已重置，可以重新开始。";
+        speak("已重置");
+      };
+
+      presetButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const seconds = Number(button.dataset.seconds);
+          sessionMode = button.dataset.mode || "training";
+          startBtn.setAttribute("aria-label", `开始${sessionName()}`);
+          pauseBtn.setAttribute("aria-label", `暂停或继续${sessionName()}`);
+          resetBtn.setAttribute("aria-label", `重置${sessionName()}`);
+          selectedSeconds = seconds;
+          totalSeconds = seconds;
+          presetButtons.forEach((btn) => btn.classList.toggle("active", btn === button));
+          if (!running && !paused) {
+            timeDisplay.textContent = formatTime(selectedSeconds);
+          }
+          timerLabel.textContent = "未开始";
+          statusBox.textContent = `已选择${sessionName()} ${formatDuration(selectedSeconds)}。点击“开始”进行倒计时。`;
+        });
+      });
+
+      startBtn.addEventListener("click", startTimer);
+      pauseBtn.addEventListener("click", pauseTimer);
+      resetBtn.addEventListener("click", resetTimer);
+
+      clearFilterBtn.addEventListener("click", () => {
+        dateFilter.value = "";
+        renderHistory();
+      });
+
+      clearRecordsBtn.addEventListener("click", () => {
+        if (!confirm("确定要清空所有训练记录吗？")) return;
+        saveRecords([]);
+        renderHistory();
+      });
+
+      dateFilter.addEventListener("change", renderHistory);
+
+      preloadChineseVoice();
+      if (window.speechSynthesis) {
+        window.speechSynthesis.addEventListener("voiceschanged", preloadChineseVoice);
+      }
+
+      timeDisplay.textContent = formatTime(selectedSeconds);
+      renderHistory();
+    </script>
+  </body>
+</html>
